@@ -2,51 +2,55 @@
 
 # Step 1: LAMP server installation
 echo "Updating system and installing required packages..."
-sudo apt-get update
-sudo apt-get install -y apache2 php7.4 libapache2-mod-php7.4 php7.4-mysql graphviz aspell git 
-sudo apt-get install -y clamav php7.4-pspell php7.4-curl php7.4-gd php7.4-intl php7.4-mysql ghostscript
-sudo apt-get install -y php7.4-xml php7.4-xmlrpc php7.4-ldap php7.4-zip php7.4-soap php7.4-mbstring
-sudo apt-get install -y mariadb-server mariadb-client
+apt-get update
+apt-get install -y apache2 php7.4 libapache2-mod-php7.4 php7.4-mysql graphviz aspell git 
+apt-get install -y clamav php7.4-pspell php7.4-curl php7.4-gd php7.4-intl php7.4-mysql ghostscript
+apt-get install -y php7.4-xml php7.4-xmlrpc php7.4-ldap php7.4-zip php7.4-soap php7.4-mbstring
+apt-get install -y mariadb-server mariadb-client
 echo "Step 1 has completed."
 
 # Step 2: Clone the Moodle repository into /opt and copy to /var/www
 echo "Cloning Moodle repository into /opt and copying to /var/www/"
 echo "Be patient, this can take several minutes."
+if [ -d "/var/www/moodle" ]; then
+  rm -rf /var/www/moodle
+fi
 cd /var/www
-sudo git clone https://github.com/moodle/moodle.git
+git clone https://github.com/moodle/moodle.git
 cd moodle
-sudo git checkout -t origin/MOODLE_401_STABLE
+git checkout -t origin/MOODLE_401_STABLE
 echo "Step 2 has completed."
 
 # Step 3: Directories, ownership, permissions, php.ini changes and virtual hosts 
 echo "Setting up directories, ownership, permissions, php.ini changes and virtual hosts..."
-sudo mkdir -p /var/www/moodledata
-sudo chown -R www-data /var/www/moodledata
-sudo chmod -R 777 /var/www/moodledata
-sudo chmod -R 755 /var/www/moodle
+if [ -d "/var/www/moodledata" ]; then
+  rm -rf /var/www/moodledata
+fi
+mkdir -p /var/www/moodledata
+chown -R www-data /var/www/moodledata
+chmod -R 777 /var/www/moodledata
+chmod -R 755 /var/www/moodle
 
 # Change the Apache DocumentRoot using sed so Moodle opens at http://webaddress
-sudo cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/moodle.conf
-sudo sed -i 's|/var/www/html|/var/www/moodle|g' /etc/apache2/sites-available/moodle.conf
-sudo a2dissite 000-default.conf
-sudo a2ensite moodle.conf
-sudo systemctl reload apache2
+cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/moodle.conf
+sed -i 's|/var/www/html|/var/www/moodle|g' /etc/apache2/sites-available/moodle.conf
+a2dissite 000-default.conf
+a2ensite moodle.conf
+systemctl reload apache2
 
 # Update the php.ini files, required to pass Moodle install check
-sudo sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' /etc/php/7.4/apache2/php.ini
-sudo sed -i 's/.*post_max_size =.*/post_max_size = 80M/' /etc/php/7.4/apache2/php.ini
-sudo sed -i 's/.*upload_max_filesize =.*/upload_max_filesize = 80M/' /etc/php/7.4/apache2/php.ini
+sed -i 's/.*max_input_vars =.*/max_input_vars = 5000/' /etc/php/7.4/apache2/php.ini
+sed -i 's/.*post_max_size =.*/post_max_size = 80M/' /etc/php/7.4/apache2/php.ini
+sed -i 's/.*upload_max_filesize =.*/upload_max_filesize = 80M/' /etc/php/7.4/apache2/php.ini
 
 # Restart Apache to allow changes to take place
-sudo service apache2 restart
+service apache2 restart
 echo "Step 3 has completed."
 
 # Step 4: Set up cron job to run every minute 
 echo "Setting up cron job for the www-data user..."
 CRON_JOB="* * * * * /var/www/moodle/admin/cli/cron.php >/dev/null"
-echo "$CRON_JOB" > /tmp/moodle_cron
-sudo crontab -u www-data /tmp/moodle_cron
-sudo rm /tmp/moodle_cron
+(crontab -u www-data -l 2>/dev/null | grep -v -F "$CRON_JOB"; echo "$CRON_JOB") | crontab -u www-data -
 echo "Step 4 has completed."
 
 # Step 5: Secure the MySQL service and create the database and user for Moodle
@@ -55,7 +59,7 @@ MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12)
 MYSQL_MOODLEUSER_PASSWORD=$(openssl rand -base64 12)
 
 # Set the root password using mysqladmin
-sudo mysqladmin -u root password "$MYSQL_ROOT_PASSWORD"
+mysqladmin -u root password "$MYSQL_ROOT_PASSWORD"
 
 # Create the Moodle database and user
 echo "Creating the Moodle database and user..."
@@ -70,7 +74,7 @@ EOF
 echo "SQL root password: $MYSQL_ROOT_PASSWORD, moodle SQL password: $MYSQL_MOODLEUSER_PASSWORD"
 
 # Final permissions
-sudo chmod -R 777 /var/www/moodle
+chmod -R 777 /var/www/moodle
 echo "Step 5 has completed."
 
 echo "Moodle installation and setup completed successfully."
