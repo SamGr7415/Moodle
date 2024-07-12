@@ -89,14 +89,11 @@ a2enmod rewrite
 systemctl restart apache2
 
 # Install Certbot using Snap
-apt remove certbot python3-certbot-apache -y
-snap install core
-snap refresh core
-snap install --classic certbot
-ln -s /snap/bin/certbot /usr/bin/certbot
+apt install certbot python3-certbot-apache -y
 
 # Obtain the SSL certificate for the domain
-certbot --apache -d passboltefrei.site --non-interactive --agree-tos -m your-email@passbolefrei.site
+certbot --apache -d passboltefrei.site --non-interactive --agree-tos -m your-email@passboltefrei.site
+
 
 # Set up automatic renewal
 echo "0 0,12 * * * root certbot renew --quiet" > /etc/cron.d/certbot-renew
