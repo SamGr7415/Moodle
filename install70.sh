@@ -92,7 +92,7 @@ systemctl restart apache2
 apt install certbot python3-certbot-apache -y
 
 # Obtain the SSL certificate for the domain
-certbot --apache -d passboltefrei.site --non-interactive --agree-tos -m your-email@example.com
+certbot --apache -d passboltefrei.site --non-interactive --agree-tos -m your-email@passboltefrei.site
 
 # Set up automatic renewal
 echo "0 0,12 * * * root certbot renew --quiet" > /etc/cron.d/certbot-renew
